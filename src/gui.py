@@ -38,6 +38,34 @@ from curve_optimizer import CurveOptimizer
 
 import copy
 
+# ---------------- Color Theme ----------------
+THEME = {
+    'light': {
+        'toolbar_bg': '#ECF0F1', 'sidebar_bg': '#F5F6FA',
+        'canvas_bg': '#2C2C2C', 'canvas_frame_bg': '#1E1E1E',
+        'card_bg': '#FFFFFF', 'status_bg': '#E8EAF6',
+        'text': '#2C3E50', 'text_secondary': '#7F8C8D',
+        'accent': '#3498DB', 'accent_hover': '#2980B9',
+        'success': '#27AE60', 'warning': '#F39C12',
+        'danger': '#E74C3C', 'border': '#D5D8DC',
+        'highlight': '#D4E6F1', 'separator': '#BDC3C7',
+        'scrollbar_trough': '#ECF0F1', 'scrollbar_thumb': '#BDC3C7',
+        'listbox_bg': '#FFFFFF', 'listbox_fg': '#2C3E50',
+    },
+    'dark': {
+        'toolbar_bg': '#252530', 'sidebar_bg': '#1E1E2A',
+        'canvas_bg': '#151520', 'canvas_frame_bg': '#101018',
+        'card_bg': '#2D2D3F', 'status_bg': '#2D2D3F',
+        'text': '#E0E0E0', 'text_secondary': '#999999',
+        'accent': '#5B9BD5', 'accent_hover': '#4A8AC4',
+        'success': '#2ECC71', 'warning': '#F1C40F',
+        'danger': '#E74C3C', 'border': '#3E3E50',
+        'highlight': '#3A5070', 'separator': '#3E3E50',
+        'scrollbar_trough': '#1E1E2A', 'scrollbar_thumb': '#3E3E50',
+        'listbox_bg': '#2D2D3F', 'listbox_fg': '#E0E0E0',
+    }
+}
+
 
 
 class CurveExtractorApp:
@@ -125,6 +153,10 @@ class CurveExtractorApp:
         # Config file
 
         self.config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+        self.current_theme = 'light'
+
+        # Setup ttk style
+        self.setup_style()
 
 
 
@@ -140,353 +172,277 @@ class CurveExtractorApp:
 
         
 
+
+    def setup_style(self):
+        style = ttk.Style()
+        style.theme_use('clam')
+        self.apply_theme()
+
+    def apply_theme(self):
+        t = THEME[self.current_theme]
+        self.root.configure(bg=t['sidebar_bg'])
+
+        style = ttk.Style()
+        style.configure('.', font=('Microsoft YaHei UI', 9), background=t['sidebar_bg'])
+        style.configure('TFrame', background=t['sidebar_bg'])
+        style.configure('TLabel', background=t['sidebar_bg'], foreground=t['text'])
+        style.configure('TLabelFrame', background=t['sidebar_bg'], foreground=t['text'])
+        style.configure('TLabelFrame.Label', font=('Microsoft YaHei UI', 9, 'bold'), foreground=t['accent'])
+
+        style.configure('Toolbar.TFrame', background=t['toolbar_bg'])
+        style.configure('Toolbar.TLabel', background=t['toolbar_bg'], foreground=t['text'])
+
+        style.configure('TButton', padding=(12, 6), font=('Microsoft YaHei UI', 9),
+                        borderwidth=0, relief='flat')
+        style.map('TButton',
+                  background=[('active', t['accent_hover']), ('!active', t['accent'])],
+                  foreground=[('active', 'white'), ('!active', 'white')])
+
+        style.configure('Toolbar.TButton', padding=(10, 5), font=('Microsoft YaHei UI', 9))
+        style.map('Toolbar.TButton',
+                  background=[('active', t['accent_hover']), ('!active', t['accent'])],
+                  foreground=[('active', 'white'), ('!active', 'white')])
+
+        style.configure('Accent.TButton', font=('Microsoft YaHei UI', 9, 'bold'))
+        style.map('Accent.TButton',
+                  background=[('active', t['success']), ('!active', t['accent'])],
+                  foreground=[('active', 'white'), ('!active', 'white')])
+
+        style.configure('Small.TButton', padding=(6, 3), font=('Microsoft YaHei UI', 8))
+        style.map('Small.TButton',
+                  background=[('active', t['accent_hover']), ('!active', t['accent'])],
+                  foreground=[('active', 'white'), ('!active', 'white')])
+
+        style.configure('TRadiobutton', background=t['sidebar_bg'], foreground=t['text'])
+        style.map('TRadiobutton',
+                  background=[('active', t['sidebar_bg'])],
+                  foreground=[('active', t['accent'])])
+        style.configure('TCheckbutton', background=t['sidebar_bg'], foreground=t['text'])
+        style.map('TCheckbutton',
+                  background=[('active', t['sidebar_bg'])],
+                  foreground=[('active', t['accent'])])
+
+        style.configure('Toolbar.TCheckbutton', background=t['toolbar_bg'], foreground=t['text'])
+        style.map('Toolbar.TCheckbutton',
+                  background=[('active', t['toolbar_bg'])],
+                  foreground=[('active', t['accent'])])
+
+        style.configure('TSeparator', background=t['separator'])
+        style.configure('TEntry', fieldbackground=t['card_bg'], foreground=t['text'])
+
+        style.configure('TScrollbar', troughcolor=t['scrollbar_trough'],
+                        background=t['scrollbar_thumb'], arrowcolor=t['text'])
+        style.map('TScrollbar', background=[('active', t['accent'])])
+
+        style.configure('Status.TLabel', background=t['status_bg'], foreground=t['text'],
+                        font=('Microsoft YaHei UI', 8), padding=(8, 4))
+
+        if hasattr(self, 'canvas'):
+            self.canvas.configure(bg=t['canvas_bg'])
+        if hasattr(self, 'x_point_list'):
+            self.x_point_list.configure(bg=t['listbox_bg'], fg=t['listbox_fg'])
+        if hasattr(self, 'y_point_list'):
+            self.y_point_list.configure(bg=t['listbox_bg'], fg=t['listbox_fg'])
+
+    def toggle_dark_mode(self):
+        self.current_theme = 'dark' if self.current_theme == 'light' else 'light'
+        self.apply_theme()
     def create_widgets(self):
+        t = THEME[self.current_theme]
 
         # --- 1. Top Toolbar ---
+        self.toolbar_frame = ttk.Frame(self.root, style='Toolbar.TFrame')
+        self.toolbar_frame.pack(side=tk.TOP, fill=tk.X, ipady=3)
 
-        toolbar = tk.Frame(self.root, bd=1, relief=tk.RAISED)
+        ttk.Button(self.toolbar_frame, text="打开图片", command=self.load_image, style='Toolbar.TButton').pack(side=tk.LEFT, padx=4, pady=4)
+        ttk.Button(self.toolbar_frame, text="粘贴", command=self.paste_image, style='Toolbar.TButton').pack(side=tk.LEFT, padx=4, pady=4)
 
-        toolbar.pack(side=tk.TOP, fill=tk.X)
+        ttk.Separator(self.toolbar_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6, pady=4)
 
-        
+        ttk.Button(self.toolbar_frame, text="提取数据", command=self.start_process_thread, style='Accent.TButton').pack(side=tk.LEFT, padx=4, pady=4)
+        ttk.Button(self.toolbar_frame, text="导出结果", command=self.export_data_simplified, style='Toolbar.TButton').pack(side=tk.LEFT, padx=4, pady=4)
 
-        # File Operations
+        ttk.Separator(self.toolbar_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6, pady=4)
 
-        tk.Button(toolbar, text="打开图片", command=self.load_image).pack(side=tk.LEFT, padx=2, pady=2)
+        ttk.Button(self.toolbar_frame, text="放大 (+)", command=self.zoom_in, style='Toolbar.TButton').pack(side=tk.LEFT, padx=3, pady=4)
+        ttk.Button(self.toolbar_frame, text="缩小 (-)", command=self.zoom_out, style='Toolbar.TButton').pack(side=tk.LEFT, padx=3, pady=4)
+        ttk.Button(self.toolbar_frame, text="重置缩放", command=self.reset_zoom, style='Toolbar.TButton').pack(side=tk.LEFT, padx=3, pady=4)
 
-        tk.Button(toolbar, text="粘贴", command=self.paste_image).pack(side=tk.LEFT, padx=2, pady=2)
-
-        tk.Frame(toolbar, width=10).pack(side=tk.LEFT)
-
-        tk.Button(toolbar, text="提取数据", command=self.start_process_thread, bg="#e1f5fe").pack(side=tk.LEFT, padx=2, pady=2)
-
-        tk.Button(toolbar, text="导出结果", command=self.export_data_simplified).pack(side=tk.LEFT, padx=2, pady=2)
-
-        tk.Frame(toolbar, width=20).pack(side=tk.LEFT)
-
-
-
-        # Zoom Controls
-
-        tk.Button(toolbar, text="放大 (+)", command=self.zoom_in).pack(side=tk.LEFT, padx=2)
-
-        tk.Button(toolbar, text="缩小 (-)", command=self.zoom_out).pack(side=tk.LEFT, padx=2)
-
-        tk.Button(toolbar, text="重置缩放", command=self.reset_zoom).pack(side=tk.LEFT, padx=2)
-
-        tk.Frame(toolbar, width=20).pack(side=tk.LEFT)
-
-        
-
-        # View Options
+        ttk.Separator(self.toolbar_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6, pady=4)
 
         self.show_grid_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(self.toolbar_frame, text="显示网格", variable=self.show_grid_var,
+                       command=self.toggle_grid, style='Toolbar.TCheckbutton').pack(side=tk.LEFT, padx=8, pady=4)
 
-        tk.Checkbutton(toolbar, text="显示网格", variable=self.show_grid_var, command=self.toggle_grid).pack(side=tk.LEFT, padx=5)
+        ttk.Separator(self.toolbar_frame, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=6, pady=4)
 
-        
+        ttk.Button(self.toolbar_frame, text="撤销", command=self.undo, style='Toolbar.TButton').pack(side=tk.LEFT, padx=3, pady=4)
+        ttk.Button(self.toolbar_frame, text="重做", command=self.redo, style='Toolbar.TButton').pack(side=tk.LEFT, padx=3, pady=4)
 
-        # Undo/Redo
-
-        tk.Button(toolbar, text="撤销", command=self.undo).pack(side=tk.LEFT, padx=2)
-
-        tk.Button(toolbar, text="重做", command=self.redo).pack(side=tk.LEFT, padx=2)
-
-
+        ttk.Button(self.toolbar_frame, text="[D]", command=self.toggle_dark_mode,
+                   style='Toolbar.TButton', width=3).pack(side=tk.RIGHT, padx=8, pady=4)
 
         # --- 2. Left Sidebar ---
+        self.sidebar_frame = ttk.Frame(self.root, width=260, style='TFrame')
+        self.sidebar_frame.pack(side=tk.LEFT, fill=tk.Y)
+        self.sidebar_frame.pack_propagate(False)
 
-        sidebar = tk.Frame(self.root, width=250, bg="#f0f0f0", padx=5, pady=5)
+        ttk.Label(self.sidebar_frame, text="[ 控制面板 ]", font=('Microsoft YaHei UI', 11, 'bold'),
+                  foreground=t['accent']).pack(fill=tk.X, padx=10, pady=(10, 5))
+        ttk.Separator(self.sidebar_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, padx=10)
 
-        sidebar.pack(side=tk.LEFT, fill=tk.Y)
-
-        
-
-        # Target Curve Selection
-
-        curve_frame = tk.LabelFrame(sidebar, text="当前操作曲线", padx=5, pady=5)
-
-        curve_frame.pack(fill=tk.X, pady=5)
+        curve_frame = ttk.LabelFrame(self.sidebar_frame, text="当前操作曲线", padding=(10, 8))
+        curve_frame.pack(fill=tk.X, padx=8, pady=(10, 4))
 
         self.target_curve_var = tk.StringVar(value="min")
+        ttk.Radiobutton(curve_frame, text="MIN 曲线 (绿)", variable=self.target_curve_var,
+                       value="min", command=self.set_target_curve).pack(anchor=tk.W, pady=2)
+        ttk.Radiobutton(curve_frame, text="MAX 曲线 (黄)", variable=self.target_curve_var,
+                       value="max", command=self.set_target_curve).pack(anchor=tk.W, pady=2)
 
-        tk.Radiobutton(curve_frame, text="MIN 曲线 (绿)", variable=self.target_curve_var, value="min", command=self.set_target_curve, fg="green").pack(anchor=tk.W)
-
-        tk.Radiobutton(curve_frame, text="MAX 曲线 (黄)", variable=self.target_curve_var, value="max", command=self.set_target_curve, fg="#CCCC00").pack(anchor=tk.W)
-
-        
-
-        # Tools / Modes
-
-        tool_frame = tk.LabelFrame(sidebar, text="工具模式", padx=5, pady=5)
-
-        tool_frame.pack(fill=tk.X, pady=5)
-
-        
+        tool_frame = ttk.LabelFrame(self.sidebar_frame, text="工具模式", padding=(10, 8))
+        tool_frame.pack(fill=tk.X, padx=8, pady=4)
 
         self.mode_var = tk.StringVar(value="view")
-
         modes = [
-
-            ("浏览/拖拽", "view"),
-
-            ("添加点(点击)", "add_point"),
-
-            ("移动点(拖拽)", "move_point"),
-
-            ("擦除点(点击)", "erase_point"),
-
-            ("框选删除", "erase_box"),
-
-            ("框选提取区域", "select_area"),
-
-            ("校准 X轴", "set_x"),
-
-            ("校准 Y轴", "set_y"),
-
+            ("[ ] 浏览/拖拽", "view"),
+            ("[+] 添加点(点击)", "add_point"),
+            ("[~] 移动点(拖拽)", "move_point"),
+            ("[-] 擦除点(点击)", "erase_point"),
+            ("[#] 框选删除", "erase_box"),
+            ("[=] 框选提取区域", "select_area"),
+            ("[X] 校准 X轴", "set_x"),
+            ("[Y] 校准 Y轴", "set_y"),
         ]
 
-        
-
         for text, val in modes:
+            ttk.Radiobutton(tool_frame, text=text, variable=self.mode_var, value=val, command=self.set_mode).pack(anchor=tk.W, pady=1)
 
-            tk.Radiobutton(tool_frame, text=text, variable=self.mode_var, value=val, command=self.set_mode).pack(anchor=tk.W)
+        ttk.Button(tool_frame, text="清除选区", command=self.clear_selection, style='Small.TButton').pack(fill=tk.X, pady=(6, 0))
 
-            
-
-        tk.Button(tool_frame, text="清除选区", command=self.clear_selection).pack(fill=tk.X, pady=2)
-
-        
-
-        # Settings & Calibration
-
-        setting_frame = tk.LabelFrame(sidebar, text="设置与校准", padx=5, pady=5)
-
-        setting_frame.pack(fill=tk.X, pady=5)
-
-        
+        setting_frame = ttk.LabelFrame(self.sidebar_frame, text="设置与校准", padding=(10, 8))
+        setting_frame.pack(fill=tk.X, padx=8, pady=4)
 
         self.x_log_var = tk.BooleanVar(value=False)
-
-        tk.Checkbutton(setting_frame, text="X轴对数", variable=self.x_log_var, command=self.on_axis_log_changed).pack(anchor=tk.W)
-
         self.y_log_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(setting_frame, text="X轴对数", variable=self.x_log_var, command=self.on_axis_log_changed).pack(anchor=tk.W)
+        ttk.Checkbutton(setting_frame, text="Y轴对数", variable=self.y_log_var, command=self.on_axis_log_changed).pack(anchor=tk.W)
 
-        tk.Checkbutton(setting_frame, text="Y轴对数", variable=self.y_log_var, command=self.on_axis_log_changed).pack(anchor=tk.W)
+        ttk.Separator(setting_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=6)
 
-        
+        calib_list_frame = ttk.Frame(setting_frame)
+        calib_list_frame.pack(fill=tk.X)
 
-        # Calibration Points List (Simplified)
+        ttk.Label(calib_list_frame, text="X参考点:", font=('Microsoft YaHei UI', 8, 'bold')).pack(anchor=tk.W)
+        self.x_point_list = tk.Listbox(calib_list_frame, height=3, font=("Consolas", 8),
+                                        bg=t['listbox_bg'], fg=t['listbox_fg'],
+                                        selectbackground=t['accent'], relief='flat', borderwidth=1)
+        self.x_point_list.pack(fill=tk.X, pady=(2, 4))
 
-        calib_list_frame = tk.Frame(setting_frame)
+        ttk.Label(calib_list_frame, text="Y参考点:", font=('Microsoft YaHei UI', 8, 'bold')).pack(anchor=tk.W)
+        self.y_point_list = tk.Listbox(calib_list_frame, height=3, font=("Consolas", 8),
+                                        bg=t['listbox_bg'], fg=t['listbox_fg'],
+                                        selectbackground=t['accent'], relief='flat', borderwidth=1)
+        self.y_point_list.pack(fill=tk.X, pady=(2, 4))
 
-        calib_list_frame.pack(fill=tk.X, pady=5)
+        btn_calib_reset = ttk.Frame(setting_frame)
+        btn_calib_reset.pack(fill=tk.X, pady=(4, 0))
+        ttk.Button(btn_calib_reset, text="刷新参考点", command=self.refresh_calibration_list,
+                   style='Small.TButton').pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+        ttk.Button(btn_calib_reset, text="重置所有", command=self.reset_calibration_points,
+                   style='Small.TButton').pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(2, 0))
 
-        
+        smooth_frame = ttk.LabelFrame(self.sidebar_frame, text="平滑处理", padding=(10, 8))
+        smooth_frame.pack(fill=tk.X, padx=8, pady=4)
 
-        tk.Label(calib_list_frame, text="X参考点:").pack(anchor=tk.W)
-
-        self.x_point_list = tk.Listbox(calib_list_frame, height=3, font=("Arial", 8))
-
-        self.x_point_list.pack(fill=tk.X)
-
-        
-
-        tk.Label(calib_list_frame, text="Y参考点:").pack(anchor=tk.W)
-
-        self.y_point_list = tk.Listbox(calib_list_frame, height=3, font=("Arial", 8))
-
-        self.y_point_list.pack(fill=tk.X)
-
-        
-
-        btn_calib_reset = tk.Frame(setting_frame)
-
-        btn_calib_reset.pack(fill=tk.X)
-
-        tk.Button(btn_calib_reset, text="刷新参考点", command=self.refresh_calibration_list, font=("Arial", 8)).pack(side=tk.LEFT, fill=tk.X, expand=True)
-
-        tk.Button(btn_calib_reset, text="重置所有", command=self.reset_calibration_points, font=("Arial", 8)).pack(side=tk.LEFT, fill=tk.X, expand=True)
-
-
-
-        # Smoothing
-
-        smooth_frame = tk.LabelFrame(sidebar, text="平滑处理", padx=5, pady=5)
-
-        smooth_frame.pack(fill=tk.X, pady=5)
-
-        tk.Label(smooth_frame, text="?-??o§ (1-10):").pack(side=tk.LEFT)
-
+        smooth_inner = ttk.Frame(smooth_frame)
+        smooth_inner.pack(fill=tk.X)
+        ttk.Label(smooth_inner, text="平滑处理 (1-10):", font=('Microsoft YaHei UI', 9)).pack(side=tk.LEFT)
         self.smooth_level_var = tk.IntVar(value=5)
+        ttk.Entry(smooth_inner, textvariable=self.smooth_level_var, width=5).pack(side=tk.LEFT, padx=8)
+        ttk.Button(smooth_inner, text="应用", command=self.apply_smoothing, style='Small.TButton').pack(side=tk.RIGHT)
 
-        tk.Entry(smooth_frame, textvariable=self.smooth_level_var, width=5).pack(side=tk.LEFT, padx=5)
-
-        tk.Button(smooth_frame, text="应用", command=self.apply_smoothing).pack(side=tk.RIGHT)
-
-
-
-        # Export Offsets
-
-        offset_frame = tk.LabelFrame(sidebar, text="导出偏移", padx=5, pady=5)
-
-        offset_frame.pack(fill=tk.X, pady=5)
-
-        
+        offset_frame = ttk.LabelFrame(self.sidebar_frame, text="导出偏移", padding=(10, 8))
+        offset_frame.pack(fill=tk.X, padx=8, pady=4)
 
         self.x_offset_var = tk.StringVar(value="0.0%")
-
         self.y_offset_var = tk.StringVar(value="0.0%")
 
-        
+        offset_inner = ttk.Frame(offset_frame)
+        offset_inner.pack(fill=tk.X)
+        ttk.Label(offset_inner, text="X:").pack(side=tk.LEFT, padx=(0, 4))
+        self.entry_x_off = ttk.Entry(offset_inner, textvariable=self.x_offset_var, width=8)
+        self.entry_x_off.pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Label(offset_inner, text="Y:").pack(side=tk.LEFT, padx=(0, 4))
+        self.entry_y_off = ttk.Entry(offset_inner, textvariable=self.y_offset_var, width=8)
+        self.entry_y_off.pack(side=tk.LEFT)
 
-        tk.Label(offset_frame, text="X:").pack(side=tk.LEFT)
-
-        self.entry_x_off = tk.Entry(offset_frame, textvariable=self.x_offset_var, width=6)
-
-        self.entry_x_off.pack(side=tk.LEFT, padx=2)
-
-        tk.Label(offset_frame, text="Y:").pack(side=tk.LEFT)
-
-        self.entry_y_off = tk.Entry(offset_frame, textvariable=self.y_offset_var, width=6)
-
-        self.entry_y_off.pack(side=tk.LEFT, padx=2)
-
-        
+        ttk.Frame(self.sidebar_frame, height=10).pack(fill=tk.X)
 
         # --- 3. Canvas Area (Center) ---
+        self.canvas_frame = ttk.Frame(self.root, style='TFrame')
+        self.canvas_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        canvas_container = tk.Frame(self.root, bg="gray")
+        h_scroll = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL)
+        v_scroll = ttk.Scrollbar(self.canvas_frame, orient=tk.VERTICAL)
 
-        canvas_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        
-
-        # Scrollbars
-
-        h_scroll = tk.Scrollbar(canvas_container, orient=tk.HORIZONTAL)
-
-        v_scroll = tk.Scrollbar(canvas_container, orient=tk.VERTICAL)
-
-        
-
-        self.canvas = tk.Canvas(canvas_container, bg="#404040", 
-
-                                xscrollcommand=h_scroll.set, 
-
-                                yscrollcommand=v_scroll.set)
-
-        
+        self.canvas = tk.Canvas(self.canvas_frame, bg=t['canvas_bg'],
+                                xscrollcommand=h_scroll.set,
+                                yscrollcommand=v_scroll.set,
+                                highlightthickness=0, borderwidth=0)
 
         h_scroll.config(command=self.canvas.xview)
-
         v_scroll.config(command=self.canvas.yview)
 
-        
-
         h_scroll.pack(side=tk.BOTTOM, fill=tk.X)
-
         v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        
-
-        # Bind Mouse Events
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(2, 0), pady=(2, 0))
 
         self.canvas.bind("<Button-1>", self.on_mouse_down)
-
         self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
-
         self.canvas.bind("<ButtonRelease-1>", self.on_mouse_up)
-
         self.canvas.bind("<Motion>", self.on_mouse_move)
-
-        
-
-        # Right Click Pan
-
         self.canvas.bind("<Button-3>", self.on_right_mouse_down)
-
         self.canvas.bind("<B3-Motion>", self.on_right_mouse_drag)
-
-        
-
-        # Mouse Wheel Zoom
-
-        self.canvas.bind("<MouseWheel>", self.on_mouse_wheel) 
-
-        
+        self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
 
         self.root.bind("<Control-v>", self.paste_image)
-
         self.root.bind("<Escape>", self.on_key_press)
-
         self.root.bind("<Return>", self.on_key_press)
 
-        
-
-        # Status Bar
-
+        # --- 4. Status Bar ---
         self.status_var = tk.StringVar()
-
         self.status_var.set("就绪")
+        self.status_label = ttk.Label(self.root, textvariable=self.status_var,
+                                       style='Status.TLabel', anchor=tk.W)
+        self.status_label.pack(side=tk.BOTTOM, fill=tk.X)
 
-        status_bar = tk.Label(self.root, textvariable=self.status_var, bd=1, relief=tk.SUNKEN, anchor=tk.W)
-
-        status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-
-
-
-        # Menu for Advanced Settings
-
-        menubar = tk.Menu(self.root)
-
+        # --- 5. Menu Bar ---
+        menubar = tk.Menu(self.root, bg=t['toolbar_bg'], fg=t['text'],
+                          activebackground=t['accent'], activeforeground='white')
         self.root.config(menu=menubar)
 
-        
-
-        file_menu = tk.Menu(menubar, tearoff=0)
-
+        file_menu = tk.Menu(menubar, tearoff=0, bg=t['card_bg'], fg=t['text'],
+                            activebackground=t['accent'], activeforeground='white')
         menubar.add_cascade(label="文件", menu=file_menu)
-
         file_menu.add_command(label="打开图片...", command=self.load_image)
-
         file_menu.add_command(label="另存项目...", command=self.save_project_as)
-
         file_menu.add_command(label="打开项目...", command=self.open_project)
-
         file_menu.add_separator()
-
         file_menu.add_command(label="退出", command=self.root.quit)
 
-        
-
-        settings_menu = tk.Menu(menubar, tearoff=0)
-
+        settings_menu = tk.Menu(menubar, tearoff=0, bg=t['card_bg'], fg=t['text'],
+                                activebackground=t['accent'], activeforeground='white')
         menubar.add_cascade(label="设置", menu=settings_menu)
-
         settings_menu.add_command(label="手动标定参数...", command=self.open_calibration_dialog)
-
         settings_menu.add_command(label="导出JSON...", command=self.export_json_data)
-
         settings_menu.add_command(label="导入配置...", command=self.import_configuration)
-
         settings_menu.add_command(label="导出配置...", command=self.export_configuration)
 
-        
-
-        # Hidden vars required for dialogs
-
         self.x_min_var = tk.StringVar(value="0.01")
-
         self.x_max_var = tk.StringVar(value="100000")
-
         self.y_min_var = tk.StringVar(value="0.01")
-
         self.y_max_var = tk.StringVar(value="1000")
-
-
 
     def set_target_curve(self):
 
@@ -946,7 +902,7 @@ class CurveExtractorApp:
 
         
 
-        tk.Button(top, text="更新", command=lambda: [self.update_axis_settings(), top.destroy()]).grid(row=6, column=0, columnspan=2)
+        ttk.Button(top, text="更新", command=lambda: [self.update_axis_settings(), top.destroy()]).grid(row=6, column=0, columnspan=2)
 
 
 
@@ -1004,7 +960,7 @@ class CurveExtractorApp:
 
         if not self.coord_sys:
 
-            messagebox.showinfo("提示", "èˉ·??è???")
+            messagebox.showinfo("提示", "请先标定坐标系")
 
             return
 
@@ -1376,7 +1332,7 @@ class CurveExtractorApp:
 
         self.save_settings()
 
-        self.status_var.set("é??·2???")
+        self.status_var.set("已保存项目")
 
 
 
@@ -1400,7 +1356,7 @@ class CurveExtractorApp:
 
                 self.current_rect = None
 
-                self.status_var.set("?·2?????é?????")
+                self.status_var.set("已保存数据到文件")
 
             elif self.interaction_mode != 'view':
 
@@ -1416,7 +1372,7 @@ class CurveExtractorApp:
 
             if self.selection_coords:
 
-                self.status_var.set("é??·2???è?¤????-￡??¨????°???...")
+                self.status_var.set("已打开项目，正在恢复工作状态...")
 
                 self.start_process_thread()
 
@@ -1502,7 +1458,7 @@ class CurveExtractorApp:
 
         if not hasattr(self, 'min_curve_data') or not hasattr(self, 'max_curve_data'):
 
-            messagebox.showwarning("警告", "??ˉ?????°???")
+            messagebox.showwarning("警告", "请先提取曲线数据")
 
             return
 
@@ -1524,7 +1480,7 @@ class CurveExtractorApp:
 
         except ValueError:
 
-            messagebox.showerror("错误", "????§?é????°???èˉ·è????￥????ˉ??? 11%????")
+            messagebox.showerror("错误", "请输入有效的平滑级别 (1-10)")
 
             return
 
@@ -1678,7 +1634,7 @@ class CurveExtractorApp:
 
         
 
-        btn_copy_ab = tk.Button(frame_ab, text="?¤????AB????(???è?¨????", bg="#dddddd", 
+        btn_copy_ab = ttk.Button(frame_ab, text="?¤????AB????(???è?¨????", bg="#dddddd", 
 
                                command=lambda: self.copy_to_clipboard(df[['Y1min', 'X1min']], btn_copy_ab))
 
@@ -1742,7 +1698,7 @@ class CurveExtractorApp:
 
         
 
-        btn_copy_cd = tk.Button(frame_cd, text="?¤????CD????(???è?¨????", bg="#dddddd",
+        btn_copy_cd = ttk.Button(frame_cd, text="?¤????CD????(???è?¨????", bg="#dddddd",
 
                                command=lambda: self.copy_to_clipboard(df[['Y2max', 'X2max']], btn_copy_cd))
 
@@ -1788,7 +1744,7 @@ class CurveExtractorApp:
 
         # Shortcuts
 
-        top.bind('<Control-c>', lambda e: self.status_var.set("èˉ·??1??é???¤?????ˉ1??"))
+        top.bind('<Control-c>', lambda e: self.status_var.set("数据已复制到剪贴板"))
 
 
 
@@ -1800,7 +1756,7 @@ class CurveExtractorApp:
 
             if df_subset.empty:
 
-                messagebox.showwarning("警告", "??°????o???3?????")
+                messagebox.showwarning("警告", "未找到可导出的数据")
 
                 return
 
@@ -1834,7 +1790,7 @@ class CurveExtractorApp:
 
             
 
-            self.status_var.set("??°????·2????°??aè′′?")
+            self.status_var.set("已成功导出数据到文件")
 
             
 
@@ -1964,7 +1920,7 @@ class CurveExtractorApp:
 
                 
 
-                self.status_var.set("?¤??????")
+                self.status_var.set("提取完成")
 
                 return # Success
 
@@ -1986,9 +1942,9 @@ class CurveExtractorApp:
 
                 else:
 
-                    messagebox.showerror("错误", f"?¤?????¤±è′￥ (?·2é??????: {e}")
+                    messagebox.showerror("错误", f"提取数据失败 (已重试): {e}")
 
-                    self.status_var.set("?¤?????¤±è′￥")
+                    self.status_var.set("提取数据失败")
 
 
 
@@ -2050,7 +2006,7 @@ class CurveExtractorApp:
 
             self.update_visualization()
 
-            self.status_var.set("?·2??¤é??")
+            self.status_var.set("已选定区域")
 
 
 
@@ -2068,7 +2024,7 @@ class CurveExtractorApp:
 
             self.update_visualization()
 
-            self.status_var.set("?·2é??")
+            self.status_var.set("已清除选区")
 
 
 
@@ -2232,7 +2188,7 @@ class CurveExtractorApp:
 
         else:
 
-            self.status_var.set("è????oè????′")
+            self.status_var.set("平滑级别已更新")
 
             if hasattr(self, 'magnifier_items'):
 
@@ -2574,7 +2530,7 @@ class CurveExtractorApp:
 
         if not self.coord_sys:
 
-            messagebox.showwarning("警告", "èˉ·??è????")
+            messagebox.showwarning("警告", "请先标定坐标系")
 
             return
 
@@ -2800,7 +2756,7 @@ class CurveExtractorApp:
 
             if w < 5:
 
-                self.status_var.set("é????¤??°?????·2??")
+                self.status_var.set("已标定区域，点击提取数据")
 
                 return
 
@@ -3184,7 +3140,7 @@ class CurveExtractorApp:
 
             except ValueError:
 
-                messagebox.showerror("错误", "è????￥??°??????", parent=dialog)
+                messagebox.showerror("错误", "请输入有效的数值", parent=dialog)
 
 
 
@@ -3206,23 +3162,23 @@ class CurveExtractorApp:
 
             self.save_settings()
 
-            self.status_var.set("?·2??￠?¤??????")
+            self.status_var.set("数据已导出完成")
 
             
 
-        btn_apply = tk.Button(btn_frame, text="?o???¨", command=on_apply, width=10, bg="#DDDDDD")
+        btn_apply = ttk.Button(btn_frame, text="?o???¨", command=on_apply, width=10, bg="#DDDDDD")
 
         btn_apply.pack(side=tk.LEFT, padx=10)
 
         
 
-        btn_reset = tk.Button(btn_frame, text="é?????", command=on_reset, width=10)
+        btn_reset = ttk.Button(btn_frame, text="é?????", command=on_reset, width=10)
 
         btn_reset.pack(side=tk.LEFT, padx=10)
 
         
 
-        btn_cancel = tk.Button(btn_frame, text="??", command=dialog.destroy, width=10)
+        btn_cancel = ttk.Button(btn_frame, text="??", command=dialog.destroy, width=10)
 
         btn_cancel.pack(side=tk.RIGHT, padx=10)
 
@@ -3386,7 +3342,7 @@ class CurveExtractorApp:
 
             self.update_visualization()
 
-            self.status_var.set("?·2???é?¤??°??")
+            self.status_var.set("数据已复制到剪贴板")
 
         else:
 
@@ -3426,7 +3382,7 @@ class CurveExtractorApp:
 
         self.update_visualization()
 
-        self.status_var.set("?·2??1é?????é?¤??°??")
+        self.status_var.set("已复制数据到剪贴板")
 
 
 
@@ -3498,7 +3454,7 @@ class CurveExtractorApp:
 
                 self.display_image(self.processor.image)
 
-                self.status_var.set("?·2??è′′??è??")
+                self.status_var.set("已保存项目配置")
 
                 
 
@@ -3506,7 +3462,7 @@ class CurveExtractorApp:
 
             else:
 
-                messagebox.showwarning("警告", "???è′′?????°??????")
+                messagebox.showwarning("警告", "剪贴板中没有图片数据")
 
                 
 
@@ -3530,7 +3486,7 @@ class CurveExtractorApp:
 
             self.refresh_canvas()
 
-            self.status_var.set("?·2????μ???°??????￡??¨?°?èˉ?èˉ????..")
+            self.status_var.set("正在识别图像特征，准备提取曲线...")
 
             self.root.update()
 
@@ -3644,7 +3600,7 @@ class CurveExtractorApp:
 
                 self.refresh_calibration_list()
 
-                self.status_var.set("?·2?2???¨??è????")
+                self.status_var.set("已自动检测坐标轴")
 
             except:
 
@@ -3670,7 +3626,7 @@ class CurveExtractorApp:
 
         else:
 
-            self.status_var.set("????￡??μ???°?????")
+            self.status_var.set("正在识别图像特征...")
 
 
 
@@ -3682,7 +3638,7 @@ class CurveExtractorApp:
 
         if not self.processor or not self.coord_sys:
 
-            messagebox.showerror("错误", "èˉ·??è???")
+            messagebox.showerror("错误", "请先加载图片并标定坐标系")
 
             return
 
@@ -3712,7 +3668,7 @@ class CurveExtractorApp:
 
         except ValueError:
 
-            messagebox.showerror("错误", "????°??????")
+            messagebox.showerror("错误", "请输入有效的偏移数值")
 
             return
 
@@ -3740,7 +3696,7 @@ class CurveExtractorApp:
 
         else:
 
-             messagebox.showerror("错误", "????￡??μ???°???¨???é???")
+             messagebox.showerror("错误", "无法提取曲线数据，请检查图像质量")
 
              return
 
@@ -3980,7 +3936,7 @@ class CurveExtractorApp:
 
         if not hasattr(self, 'min_curve_data') or not hasattr(self, 'max_curve_data'):
 
-            messagebox.showwarning("警告", "??ˉ?????°??è?·??°???")
+            messagebox.showwarning("警告", "请先提取数据再导出")
 
             return
 
@@ -4098,7 +4054,7 @@ class CurveExtractorApp:
 
         if not self.processor:
 
-            messagebox.showwarning("警告", "?????-????é?1????1?")
+            messagebox.showwarning("警告", "请先加载图片再操作")
 
             return
 
@@ -4420,7 +4376,7 @@ class CurveExtractorApp:
 
                 self.status_var.set(f"é?1????·2??? {os.path.basename(file_path)}")
 
-                messagebox.showinfo("提示", "é?1????·2????￠?¤??")
+                messagebox.showinfo("提示", "项目已成功加载")
 
                 
 
